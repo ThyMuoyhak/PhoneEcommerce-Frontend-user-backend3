@@ -1,0 +1,419 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "iPhone 15 Pro Max",
+      "brand": "Apple",
+      "category": "smartphones",
+      "price": 1199.99,
+      "originalPrice": 1299.99,
+      "rating": 4.8,
+      "reviews": 2456,
+      "inStock": true,
+      "featured": true,
+      "discount": 8,
+      "colors": ["Natural Titanium", "Blue Titanium", "White Titanium", "Black Titanium"],
+      "storage": ["256GB", "512GB", "1TB"],
+      "image": "https://images.unsplash.com/photo-1695048133142-1a20484d2568?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "images": [
+        "https://images.unsplash.com/photo-1695048133142-1a20484d2568?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1695048132920-7b663a1f4f92?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1695048133092-5728b3f4a0b7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ],
+      "description": "Experience the power of the A17 Pro chip and a stunning titanium design. The most advanced iPhone yet with an incredible camera system and all-day battery life.",
+      "specs": {
+        "display": "6.7-inch Super Retina XDR display",
+        "processor": "A17 Pro chip",
+        "camera": "48MP Main | 12MP Ultra Wide | 12MP Telephoto",
+        "battery": "Up to 29 hours video playback",
+        "waterResistant": "IP68"
+      }
+    },
+    {
+      "id": 2,
+      "name": "Samsung Galaxy S24 Ultra",
+      "brand": "Samsung",
+      "category": "smartphones",
+      "price": 999.99,
+      "originalPrice": 1199.99,
+      "rating": 4.7,
+      "reviews": 1876,
+      "inStock": true,
+      "featured": true,
+      "discount": 17,
+      "colors": ["Titanium Gray", "Titanium Violet", "Titanium Yellow", "Titanium Black"],
+      "storage": ["256GB", "512GB", "1TB"],
+      "image": "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "images": [
+        "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ],
+      "description": "The ultimate Galaxy experience with S Pen built-in. Featuring Galaxy AI and a 200MP camera for unparalleled photography.",
+      "specs": {
+        "display": "6.8-inch Dynamic AMOLED 2X",
+        "processor": "Snapdragon 8 Gen 3",
+        "camera": "200MP Main | 12MP Ultra Wide | 50MP Telephoto",
+        "battery": "5000mAh",
+        "waterResistant": "IP68"
+      }
+    },
+    {
+      "id": 3,
+      "name": "Google Pixel 8 Pro",
+      "brand": "Google",
+      "category": "smartphones",
+      "price": 899.99,
+      "originalPrice": 999.99,
+      "rating": 4.6,
+      "reviews": 1234,
+      "inStock": true,
+      "featured": true,
+      "discount": 10,
+      "colors": ["Obsidian", "Porcelain", "Bay"],
+      "storage": ["128GB", "256GB", "512GB"],
+      "image": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "images": [
+        "https://images.unsplash.com/photo-1598327105666-5b89351aff97?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1598327105666-5b89351aff97?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1598327105666-5b89351aff97?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ],
+      "description": "Capture amazing photos with Google's advanced AI and the best computational photography. Pure Android with guaranteed updates.",
+      "specs": {
+        "display": "6.7-inch LTPO OLED",
+        "processor": "Google Tensor G3",
+        "camera": "50MP Main | 48MP Ultra Wide | 48MP Telephoto",
+        "battery": "5050mAh",
+        "waterResistant": "IP68"
+      }
+    },
+    {
+      "id": 4,
+      "name": "OnePlus 12",
+      "brand": "OnePlus",
+      "category": "smartphones",
+      "price": 699.99,
+      "originalPrice": 799.99,
+      "rating": 4.5,
+      "reviews": 987,
+      "inStock": true,
+      "featured": false,
+      "discount": 13,
+      "colors": ["Flowy Emerald", "Silky Black"],
+      "storage": ["256GB", "512GB"],
+      "image": "https://images.unsplash.com/photo-1616348436168-de43ad0db179?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "images": [
+        "https://images.unsplash.com/photo-1616348436168-de43ad0db179?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1616348436168-de43ad0db179?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1616348436168-de43ad0db179?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ],
+      "description": "Fast and smooth with the latest Snapdragon processor and incredible charging speed. Never Settle.",
+      "specs": {
+        "display": "6.82-inch LTPO AMOLED",
+        "processor": "Snapdragon 8 Gen 3",
+        "camera": "50MP Main | 48MP Ultra Wide | 64MP Telephoto",
+        "battery": "5400mAh",
+        "waterResistant": "IP65"
+      }
+    },
+    {
+      "id": 5,
+      "name": "Xiaomi 14 Ultra",
+      "brand": "Xiaomi",
+      "category": "smartphones",
+      "price": 849.99,
+      "originalPrice": 949.99,
+      "rating": 4.4,
+      "reviews": 756,
+      "inStock": true,
+      "featured": false,
+      "discount": 11,
+      "colors": ["Black", "White"],
+      "storage": ["256GB", "512GB"],
+      "image": "https://images.unsplash.com/photo-1598965402089-897ce52e8355?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "images": [
+        "https://images.unsplash.com/photo-1598965402089-897ce52e8355?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1598965402089-897ce52e8355?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1598965402089-897ce52e8355?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ],
+      "description": "Leica professional camera system with stunning design and powerful performance.",
+      "specs": {
+        "display": "6.73-inch LTPO AMOLED",
+        "processor": "Snapdragon 8 Gen 3",
+        "camera": "50MP Quad Camera System",
+        "battery": "5300mAh",
+        "waterResistant": "IP68"
+      }
+    },
+    {
+      "id": 6,
+      "name": "iPhone 15",
+      "brand": "Apple",
+      "category": "smartphones",
+      "price": 799.99,
+      "originalPrice": 829.99,
+      "rating": 4.7,
+      "reviews": 3245,
+      "inStock": true,
+      "featured": true,
+      "discount": 4,
+      "colors": ["Pink", "Yellow", "Green", "Blue", "Black"],
+      "storage": ["128GB", "256GB", "512GB"],
+      "image": "https://images.unsplash.com/photo-1696426069009-e9c8d6b0a5d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "images": [
+        "https://images.unsplash.com/photo-1696426069009-e9c8d6b0a5d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1696426069009-e9c8d6b0a5d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1696426069009-e9c8d6b0a5d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ],
+      "description": "Dynamic Island and 48MP main camera. A brilliant new way to stay connected.",
+      "specs": {
+        "display": "6.1-inch Super Retina XDR",
+        "processor": "A16 Bionic",
+        "camera": "48MP Main | 12MP Ultra Wide",
+        "battery": "Up to 26 hours video playback",
+        "waterResistant": "IP68"
+      }
+    },
+    {
+      "id": 7,
+      "name": "AirPods Pro (2nd Gen)",
+      "brand": "Apple",
+      "category": "accessories",
+      "price": 249.99,
+      "originalPrice": 249.99,
+      "rating": 4.9,
+      "reviews": 5678,
+      "inStock": true,
+      "featured": true,
+      "discount": 0,
+      "colors": ["White"],
+      "image": "https://images.unsplash.com/photo-1588423771073-b8903fbb85b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "images": [
+        "https://images.unsplash.com/photo-1588423771073-b8903fbb85b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1588423771073-b8903fbb85b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1588423771073-b8903fbb85b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ],
+      "description": "Industry-leading noise cancellation and immersive sound. The ultimate wireless earbuds experience.",
+      "specs": {
+        "audio": "Active Noise Cancellation",
+        "battery": "6 hours listening time",
+        "charging": "USB-C or MagSafe",
+        "connectivity": "Bluetooth 5.3",
+        "waterResistant": "IP54"
+      }
+    },
+    {
+      "id": 8,
+      "name": "Samsung Galaxy Watch 6",
+      "brand": "Samsung",
+      "category": "accessories",
+      "price": 299.99,
+      "originalPrice": 329.99,
+      "rating": 4.5,
+      "reviews": 876,
+      "inStock": true,
+      "featured": false,
+      "discount": 9,
+      "colors": ["Black", "Silver", "Gold"],
+      "storage": ["40mm", "44mm"],
+      "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "images": [
+        "https://images.unsplash.com/photo-1546868871-7041f2a55e12?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1546868871-7041f2a55e12?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1546868871-7041f2a55e12?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ],
+      "description": "Track your fitness goals and stay connected with the sleek Galaxy Watch.",
+      "specs": {
+        "display": "Super AMOLED",
+        "battery": "40 hours",
+        "sensors": "Heart Rate, ECG, Body Composition",
+        "connectivity": "Bluetooth, LTE optional",
+        "waterResistant": "5ATM"
+      }
+    },
+    {
+      "id": 9,
+      "name": "iPhone 15 Pro Case",
+      "brand": "Apple",
+      "category": "accessories",
+      "price": 49.99,
+      "originalPrice": 49.99,
+      "rating": 4.3,
+      "reviews": 543,
+      "inStock": true,
+      "featured": false,
+      "discount": 0,
+      "colors": ["Black", "Blue", "Green", "Orange", "Pink"],
+      "image": "https://images.unsplash.com/photo 1592751869208-5d3b4c8f2d9c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "images": [
+        "https://images.unsplash.com/photo-1592751869208-5d3b4c8f2d9c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1592751869208-5d3b4c8f2d9c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1592751869208-5d3b4c8f2d9c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ],
+      "description": "Official silicone case with MagSafe for perfect fit and protection.",
+      "specs": {
+        "material": "Silicone",
+        "compatibility": "iPhone 15 Pro",
+        "features": "MagSafe compatible",
+        "protection": "Drop protection"
+      }
+    },
+    {
+      "id": 10,
+      "name": "Anker 20W USB-C Charger",
+      "brand": "Anker",
+      "category": "accessories",
+      "price": 19.99,
+      "originalPrice": 24.99,
+      "rating": 4.8,
+      "reviews": 12345,
+      "inStock": true,
+      "featured": false,
+      "discount": 20,
+      "colors": ["White"],
+      "image": "https://images.unsplash.com/photo-1583863788434-e58a36330bcf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "images": [
+        "https://images.unsplash.com/photo-1583863788434-e58a36330bcf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1583863788434-e58a36330bcf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1583863788434-e58a36330bcf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ],
+      "description": "Compact and powerful charger for fast charging your devices.",
+      "specs": {
+        "power": "20W",
+        "port": "USB-C",
+        "charging": "Fast charging compatible",
+        "safety": "Multi-protect safety system"
+      }
+    },
+    {
+      "id": 11,
+      "name": "Nothing Phone (2)",
+      "brand": "Nothing",
+      "category": "smartphones",
+      "price": 599.99,
+      "originalPrice": 699.99,
+      "rating": 4.4,
+      "reviews": 654,
+      "inStock": true,
+      "featured": false,
+      "discount": 14,
+      "colors": ["White", "Gray"],
+      "storage": ["128GB", "256GB", "512GB"],
+      "image": "https://images.unsplash.com/photo-1678911820864-e2c567c655d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "images": [
+        "https://images.unsplash.com/photo-1678911820864-e2c567c655d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1678911820864-e2c567c655d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1678911820864-e2c567c655d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ],
+      "description": "Unique transparent design with Glyph Interface. A pure Android experience.",
+      "specs": {
+        "display": "6.7-inch LTPO OLED",
+        "processor": "Snapdragon 8+ Gen 1",
+        "camera": "50MP Main | 50MP Ultra Wide",
+        "battery": "4700mAh",
+        "waterResistant": "IP54"
+      }
+    },
+    {
+      "id": 12,
+      "name": "Samsung 45W Charger",
+      "brand": "Samsung",
+      "category": "accessories",
+      "price": 34.99,
+      "originalPrice": 49.99,
+      "rating": 4.6,
+      "reviews": 2345,
+      "inStock": true,
+      "featured": false,
+      "discount": 30,
+      "colors": ["Black"],
+      "image": "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "images": [
+        "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      ],
+      "description": "Super fast charging for your Samsung devices.",
+      "specs": {
+        "power": "45W",
+        "port": "USB-C",
+        "compatibility": "Samsung Galaxy devices",
+        "charging": "Super Fast Charging 2.0"
+      }
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Smartphones",
+      "slug": "smartphones",
+      "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "count": 8
+    },
+    {
+      "id": 2,
+      "name": "Accessories",
+      "slug": "accessories",
+      "image": "https://images.unsplash.com/photo-1583863788434-e58a36330bcf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "count": 4
+    },
+    {
+      "id": 3,
+      "name": "Smartwatches",
+      "slug": "smartwatches",
+      "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "count": 1
+    },
+    {
+      "id": 4,
+      "name": "Audio",
+      "slug": "audio",
+      "image": "https://images.unsplash.com/photo-1588423771073-b8903fbb85b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "count": 1
+    }
+  ],
+  "brands": [
+    {
+      "id": 1,
+      "name": "Apple",
+      "slug": "apple",
+      "count": 4
+    },
+    {
+      "id": 2,
+      "name": "Samsung",
+      "slug": "samsung",
+      "count": 3
+    },
+    {
+      "id": 3,
+      "name": "Google",
+      "slug": "google",
+      "count": 1
+    },
+    {
+      "id": 4,
+      "name": "OnePlus",
+      "slug": "oneplus",
+      "count": 1
+    },
+    {
+      "id": 5,
+      "name": "Xiaomi",
+      "slug": "xiaomi",
+      "count": 1
+    },
+    {
+      "id": 6,
+      "name": "Nothing",
+      "slug": "nothing",
+      "count": 1
+    },
+    {
+      "id": 7,
+      "name": "Anker",
+      "slug": "anker",
+      "count": 1
+    }
+  ]
+}
