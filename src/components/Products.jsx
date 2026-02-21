@@ -41,6 +41,33 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
         setDisplayedProducts(filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct));
     }, [filteredProducts, currentPage, productsPerPage]);
 
+    // Helper function to get correct image URL
+    const getImageUrl = (imagePath) => {
+        if (!imagePath) return 'https://via.placeholder.com/300x200?text=No+Image';
+        
+        // Clean up the base URL and path
+        const baseURL = api.defaults.baseURL.replace(/\/+$/, ''); // Remove trailing slashes
+        const cleanPath = imagePath.replace(/^\/+/, ''); // Remove leading slashes
+        
+        // Construct URL without double slashes
+        return `${baseURL}/${cleanPath}`;
+    };
+
+    // Helper function to test multiple image URL patterns
+    const getAlternativeImageUrls = (mainImage) => {
+        if (!mainImage) return ['https://via.placeholder.com/300x200?text=No+Image'];
+        
+        const filename = mainImage.split('/').pop();
+        const baseURL = api.defaults.baseURL.replace(/\/+$/, '');
+        
+        return [
+            `${baseURL}/${mainImage.replace(/^\/+/, '')}`,
+            `${baseURL}/uploads/products/main/${filename}`,
+            `${baseURL}/uploads/${filename}`,
+            `https://via.placeholder.com/300x200?text=Image+Not+Found`
+        ];
+    };
+
     // Fetch products from API
     const fetchProducts = async () => {
         try {
@@ -86,16 +113,11 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
                 
                 // Transform API data to frontend format
                 const transformedProducts = productsData.map(product => {
-                    // Fix image URL - remove double slashes
-                    let imageUrl = 'https://via.placeholder.com/300x200?text=No+Image';
+                    // Get image URL using helper
+                    const imageUrl = getImageUrl(product.main_image);
+                    const alternativeUrls = getAlternativeImageUrls(product.main_image);
                     
-                    if (product.main_image) {
-                        // Remove leading slash if present to avoid double slashes
-                        const cleanPath = product.main_image.startsWith('/') 
-                            ? product.main_image.substring(1) 
-                            : product.main_image;
-                        imageUrl = `${api.defaults.baseURL}/${cleanPath}`;
-                    }
+                    console.log(`Product ${product.id} image URL:`, imageUrl);
                     
                     return {
                         id: product.id,
@@ -115,11 +137,9 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
                         specs: product.specs || {},
                         main_image: product.main_image,
                         image: imageUrl,
+                        alternativeUrls: alternativeUrls,
                         images: product.images && product.images.length > 0 
-                            ? product.images.map(img => {
-                                const cleanPath = img.startsWith('/') ? img.substring(1) : img;
-                                return `${api.defaults.baseURL}/${cleanPath}`;
-                              })
+                            ? product.images.map(img => getImageUrl(img))
                             : [imageUrl]
                     };
                 });
@@ -213,7 +233,7 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
                 filtered.sort((a, b) => b.name.localeCompare(a.name));
                 break;
             default:
-                filtered.sort((a, b) => a.id - b.id);
+                filtered.sort((a, b) => a.id - a.id);
         }
 
         setFilteredProducts(filtered);
@@ -286,6 +306,17 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
     };
 
     const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+
+    // Debug effect to check image URLs
+    useEffect(() => {
+        if (products.length > 0) {
+            console.log('=== IMAGE DEBUG INFO ===');
+            console.log('API Base URL:', api.defaults.baseURL);
+            console.log('First product:', products[0]);
+            console.log('First product image URL:', products[0].image);
+            console.log('Alternative URLs:', products[0].alternativeUrls);
+        }
+    }, [products]);
 
     if (loading) {
         return (
@@ -462,8 +493,19 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
                                         alt={product.name}
                                         className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
                                         onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Found';
+                                            console.error('Image failed to load:', product.image);
+                                            
+                                            // Try alternative URLs
+                                            const altUrls = product.alternativeUrls || [];
+                                            const currentSrc = e.target.src;
+                                            const currentIndex = altUrls.indexOf(currentSrc);
+                                            
+                                            if (currentIndex < altUrls.length - 1) {
+                                                e.target.src = altUrls[currentIndex + 1];
+                                            } else {
+                                                e.target.onerror = null;
+                                                e.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Found';
+                                            }
                                         }}
                                     />
                                     {product.discount > 0 && (
