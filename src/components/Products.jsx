@@ -16,7 +16,6 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
     const [productsPerPage] = useState(8);
     const [brands, setBrands] = useState(['all']);
     const [categories, setCategories] = useState([]);
-    const [totalProducts, setTotalProducts] = useState(0);
     
     const navigate = useNavigate();
 
@@ -49,7 +48,7 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
             setError(null);
             
             // Build query parameters
-            const params = {};
+            const params = { limit: 50 };
             
             if (filter !== 'all') {
                 switch(filter) {
@@ -67,50 +66,68 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
                 }
             }
             
-            // Add pagination params if needed
-            params.limit = 50; // Get more products for filtering on frontend
+            console.log('Fetching products with params:', params);
             
             const response = await api.get('/products/', { params });
             
+            console.log('API Response:', response.data);
+            
             if (response.data) {
-                console.log('Fetched products:', response.data);
+                // Handle response data (already an array from your API)
+                const productsData = Array.isArray(response.data) ? response.data : [];
                 
-                // Handle both array and paginated responses
-                const productsData = Array.isArray(response.data) 
-                    ? response.data 
-                    : response.data.items || response.data.products || [];
+                console.log('Products data:', productsData);
                 
-                setTotalProducts(productsData.length);
+                if (productsData.length === 0) {
+                    setProducts([]);
+                    setLoading(false);
+                    return;
+                }
                 
                 // Transform API data to frontend format
-                const transformedProducts = productsData.map(product => ({
-                    id: product.id,
-                    name: product.name,
-                    brand: product.brand || 'Unknown Brand',
-                    category: product.category || 'Uncategorized',
-                    price: parseFloat(product.price) || 0,
-                    originalPrice: parseFloat(product.original_price) || parseFloat(product.price) || 0,
-                    rating: parseFloat(product.rating) || 0,
-                    reviews: product.reviews_count || product.reviews || 0,
-                    inStock: product.in_stock !== undefined ? product.in_stock : true,
-                    featured: product.featured || false,
-                    discount: parseInt(product.discount) || 0,
-                    colors: product.colors || [],
-                    storage: product.storage || [],
-                    description: product.description || '',
-                    specs: product.specs || {},
-                    main_image: product.main_image,
-                    image: product.main_image 
-                        ? `${api.defaults.baseURL}${product.main_image}` 
-                        : 'https://via.placeholder.com/300x200?text=No+Image',
-                    images: product.images 
-                        ? product.images.map(img => `${api.defaults.baseURL}${img}`)
-                        : []
-                }));
+                const transformedProducts = productsData.map(product => {
+                    // Fix image URL - remove double slashes
+                    let imageUrl = 'https://via.placeholder.com/300x200?text=No+Image';
+                    
+                    if (product.main_image) {
+                        // Remove leading slash if present to avoid double slashes
+                        const cleanPath = product.main_image.startsWith('/') 
+                            ? product.main_image.substring(1) 
+                            : product.main_image;
+                        imageUrl = `${api.defaults.baseURL}/${cleanPath}`;
+                    }
+                    
+                    return {
+                        id: product.id,
+                        name: product.name || 'Unnamed Product',
+                        brand: product.brand || 'Unknown Brand',
+                        category: product.category || 'Uncategorized',
+                        price: parseFloat(product.price) || 0,
+                        originalPrice: parseFloat(product.original_price) || parseFloat(product.price) || 0,
+                        rating: parseFloat(product.rating) || 0,
+                        reviews: product.reviews || product.reviews_count || 0,
+                        inStock: product.in_stock !== undefined ? product.in_stock : true,
+                        featured: product.featured || false,
+                        discount: parseInt(product.discount) || 0,
+                        colors: product.colors || [],
+                        storage: product.storage || [],
+                        description: product.description || 'No description available',
+                        specs: product.specs || {},
+                        main_image: product.main_image,
+                        image: imageUrl,
+                        images: product.images && product.images.length > 0 
+                            ? product.images.map(img => {
+                                const cleanPath = img.startsWith('/') ? img.substring(1) : img;
+                                return `${api.defaults.baseURL}/${cleanPath}`;
+                              })
+                            : [imageUrl]
+                    };
+                });
                 
+                console.log('Transformed products:', transformedProducts);
                 setProducts(transformedProducts);
                 
-                // Extract unique brands (filter out null/undefined)
+                // Extract unique brands
                 const uniqueBrands = ['all', ...new Set(
                     transformedProducts
                         .map(p => p.brand)
@@ -128,21 +145,8 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
             }
         } catch (err) {
             console.error('Error fetching products:', err);
-            
-            // Handle different error types
-            if (err.code === 'ERR_NETWORK') {
-                setError('Cannot connect to server. Please check if the backend is running.');
-            } else if (err.response) {
-                // Server responded with error
-                setError(err.response.data?.detail || err.response.data?.message || `Server error: ${err.response.status}`);
-            } else if (err.request) {
-                // Request made but no response
-                setError('No response from server. Please try again later.');
-            } else {
-                setError(err.message || 'Failed to fetch products');
-            }
-            
-            toast.error('Failed to load products. Please try again later.');
+            setError(err.response?.data?.detail || err.message || 'Failed to fetch products');
+            toast.error('Failed to load products');
         } finally {
             setLoading(false);
         }
@@ -150,39 +154,21 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
 
     // Filter and sort products
     const filterAndSortProducts = () => {
-        if (!products.length) return;
+        if (!products.length) {
+            setFilteredProducts([]);
+            return;
+        }
         
         let filtered = [...products];
 
         // Apply category filter from props
         if (filter !== 'all') {
-            switch(filter) {
-                case 'smartphones':
-                    filtered = filtered.filter(product => 
-                        product.category?.toLowerCase().includes('phone') || 
-                        product.category?.toLowerCase() === 'smartphones'
-                    );
-                    break;
-                case 'accessories':
-                    filtered = filtered.filter(product => 
-                        product.category?.toLowerCase().includes('accessory')
-                    );
-                    break;
-                case 'deals':
-                    filtered = filtered.filter(product => product.discount > 0);
-                    break;
-                case 'new':
-                    // Already sorted by newest from API
-                    break;
-                case 'featured':
-                    filtered = filtered.filter(product => product.featured === true);
-                    break;
-                default:
-                    // If filter is a specific category
-                    filtered = filtered.filter(product => 
-                        product.category?.toLowerCase() === filter.toLowerCase()
-                    );
-            }
+            const filterLower = filter.toLowerCase();
+            filtered = filtered.filter(product => 
+                product.category?.toLowerCase() === filterLower ||
+                (filter === 'deals' && product.discount > 0) ||
+                (filter === 'featured' && product.featured)
+            );
         }
 
         // Filter by brand
@@ -206,43 +192,40 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
         // Sort products
         switch(sortBy) {
             case 'price-low':
-                filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
+                filtered.sort((a, b) => a.price - b.price);
                 break;
             case 'price-high':
-                filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
+                filtered.sort((a, b) => b.price - a.price);
                 break;
             case 'rating':
-                filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                filtered.sort((a, b) => b.rating - a.rating);
                 break;
             case 'discount':
-                filtered.sort((a, b) => (b.discount || 0) - (a.discount || 0));
+                filtered.sort((a, b) => b.discount - a.discount);
                 break;
             case 'newest':
                 filtered.sort((a, b) => b.id - a.id);
                 break;
             case 'name-asc':
-                filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                filtered.sort((a, b) => a.name.localeCompare(b.name));
                 break;
             case 'name-desc':
-                filtered.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+                filtered.sort((a, b) => b.name.localeCompare(a.name));
                 break;
             default:
-                // Default sort by id
                 filtered.sort((a, b) => a.id - b.id);
         }
 
         setFilteredProducts(filtered);
-        setCurrentPage(1); // Reset to first page when filters change
+        setCurrentPage(1);
     };
 
-    // Handle product click
     const handleProductClick = (productId) => {
         navigate(`/product/${productId}`);
     };
 
-    // Handle add to cart
     const handleAddToCart = async (e, product) => {
-        e.stopPropagation(); // Prevent triggering the product click
+        e.stopPropagation();
         
         if (!product.inStock) {
             toast.error('This product is out of stock');
@@ -261,10 +244,8 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
             };
             
             if (token) {
-                // Add to cart via API
                 await api.post('/cart/add', cartItem);
             } else {
-                // Add to localStorage cart
                 const existingCart = JSON.parse(localStorage.getItem('cart')) || [];
                 const existingItemIndex = existingCart.findIndex(item => item.id === product.id);
                 
@@ -277,47 +258,35 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
                         brand: product.brand,
                         price: product.price,
                         image: product.image,
-                        main_image: product.main_image,
-                        quantity: 1,
-                        selectedColor: product.colors?.length > 0 ? product.colors[0] : null,
-                        selectedStorage: product.storage?.length > 0 ? product.storage[0] : null
+                        quantity: 1
                     });
                 }
                 
                 localStorage.setItem('cart', JSON.stringify(existingCart));
             }
             
-            // Trigger cart update events
-            if (window.triggerCartUpdate) {
-                window.triggerCartUpdate();
-            }
             window.dispatchEvent(new Event('cartUpdated'));
-            
             toast.success(`${product.name} added to cart!`);
             
         } catch (error) {
             console.error('Error adding to cart:', error);
-            toast.error(error.response?.data?.detail || 'Failed to add to cart');
+            toast.error('Failed to add to cart');
         }
     };
 
-    // Clear all filters
     const clearAllFilters = () => {
         setSelectedBrand('all');
         setSearchTerm('');
         setSortBy('default');
     };
 
-    // Pagination
     const paginate = (pageNumber) => {
         setCurrentPage(pageNumber);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // Calculate total pages
     const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
 
-    // Render loading state
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -326,7 +295,6 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
         );
     }
 
-    // Render error state
     if (error) {
         return (
             <div className="text-center py-12">
@@ -340,6 +308,18 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
                 >
                     Try Again
                 </button>
+            </div>
+        );
+    }
+
+    if (products.length === 0) {
+        return (
+            <div className="text-center py-12">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                </svg>
+                <p className="text-gray-500 text-lg mb-4">No products available</p>
+                <p className="text-gray-400 text-sm">Check back later for new products</p>
             </div>
         );
     }
@@ -560,7 +540,6 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
                             
                             {[...Array(totalPages)].map((_, index) => {
                                 const pageNumber = index + 1;
-                                // Show first, last, and pages around current
                                 if (
                                     pageNumber === 1 ||
                                     pageNumber === totalPages ||
