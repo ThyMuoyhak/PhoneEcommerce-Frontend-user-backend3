@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import toast from 'react-hot-toast';
-
-const API_URL = process.env.REACT_APP_API_URL || 'https://backend4-phone-ecommerce.onrender.com';
+import api from '../utils/api';
 
 const ProductDetails = () => {
     const { id } = useParams();
@@ -18,41 +16,46 @@ const ProductDetails = () => {
     const [relatedProducts, setRelatedProducts] = useState([]);
 
     useEffect(() => {
-        fetchProductDetails();
+        if (id) {
+            fetchProductDetails();
+        }
     }, [id]);
 
     const fetchProductDetails = async () => {
         try {
             setLoading(true);
+            setError(null);
             
-            // Fetch product from API
-            const response = await axios.get(`${API_URL}/products/${id}`);
+            const response = await api.get(`/products/${id}`);
             
             if (response.data) {
                 console.log('Product details:', response.data);
                 
-                // Transform API data to match frontend format
+                // Transform API data to frontend format
                 const productData = {
                     id: response.data.id,
                     name: response.data.name,
-                    brand: response.data.brand,
-                    category: response.data.category,
-                    price: response.data.price,
-                    originalPrice: response.data.original_price || response.data.price,
-                    rating: response.data.rating || 0,
-                    reviews: response.data.reviews || 0,
-                    inStock: response.data.in_stock,
+                    brand: response.data.brand || 'Unknown Brand',
+                    category: response.data.category || 'Uncategorized',
+                    price: parseFloat(response.data.price) || 0,
+                    originalPrice: parseFloat(response.data.original_price) || parseFloat(response.data.price) || 0,
+                    rating: parseFloat(response.data.rating) || 0,
+                    reviews: response.data.reviews_count || response.data.reviews || 0,
+                    inStock: response.data.in_stock !== undefined ? response.data.in_stock : true,
                     featured: response.data.featured || false,
-                    discount: response.data.discount || 0,
+                    discount: parseInt(response.data.discount) || 0,
                     colors: response.data.colors || [],
                     storage: response.data.storage || [],
                     description: response.data.description || '',
                     specs: response.data.specs || {},
-                    image: response.data.main_image ? `${API_URL}/${response.data.main_image}` : 'https://via.placeholder.com/600x400?text=No+Image',
+                    main_image: response.data.main_image,
+                    image: response.data.main_image 
+                        ? `${api.defaults.baseURL}${response.data.main_image}` 
+                        : 'https://via.placeholder.com/600x400?text=No+Image',
                     images: response.data.images && response.data.images.length > 0 
-                        ? response.data.images.map(img => `${API_URL}/${img}`)
+                        ? response.data.images.map(img => `${api.defaults.baseURL}${img}`)
                         : response.data.main_image 
-                            ? [`${API_URL}/${response.data.main_image}`]
+                            ? [`${api.defaults.baseURL}${response.data.main_image}`]
                             : ['https://via.placeholder.com/600x400?text=No+Image']
                 };
                 
@@ -66,12 +69,25 @@ const ProductDetails = () => {
                     setSelectedStorage(productData.storage[0]);
                 }
                 
-                // Fetch related products from same category
-                fetchRelatedProducts(productData.category, productData.id);
+                // Fetch related products
+                if (productData.category) {
+                    fetchRelatedProducts(productData.category, productData.id);
+                }
             }
         } catch (err) {
             console.error('Error fetching product:', err);
-            setError(err.response?.data?.detail || err.message || 'Failed to fetch product details');
+            
+            // Handle different error types
+            if (err.code === 'ERR_NETWORK') {
+                setError('Cannot connect to server. Please check if the backend is running.');
+            } else if (err.response?.status === 404) {
+                setError('Product not found');
+            } else if (err.response) {
+                setError(err.response.data?.detail || err.response.data?.message || `Server error: ${err.response.status}`);
+            } else {
+                setError(err.message || 'Failed to fetch product details');
+            }
+            
             toast.error('Failed to load product details');
         } finally {
             setLoading(false);
@@ -80,30 +96,40 @@ const ProductDetails = () => {
 
     const fetchRelatedProducts = async (category, currentProductId) => {
         try {
-            const response = await axios.get(`${API_URL}/products/`, {
-                params: { category: category, limit: 4 }
+            const response = await api.get('/products/', {
+                params: { 
+                    category: category, 
+                    limit: 4,
+                    exclude: currentProductId 
+                }
             });
             
             if (response.data) {
-                // Filter out current product and transform data
-                const related = response.data
+                // Handle both array and paginated responses
+                const productsData = Array.isArray(response.data) 
+                    ? response.data 
+                    : response.data.items || response.data.products || [];
+                
+                // Filter out current product and transform
+                const related = productsData
                     .filter(p => p.id !== currentProductId)
                     .slice(0, 4)
                     .map(p => ({
                         id: p.id,
                         name: p.name,
-                        brand: p.brand,
-                        price: p.price,
-                        originalPrice: p.original_price || p.price,
-                        rating: p.rating || 0,
-                        image: p.main_image ? `${API_URL}/${p.main_image}` : 'https://via.placeholder.com/200x200?text=No+Image',
-                        discount: p.discount || 0
+                        brand: p.brand || 'Unknown Brand',
+                        price: parseFloat(p.price) || 0,
+                        originalPrice: parseFloat(p.original_price) || parseFloat(p.price) || 0,
+                        rating: parseFloat(p.rating) || 0,
+                        image: p.main_image ? `${api.defaults.baseURL}${p.main_image}` : 'https://via.placeholder.com/200x200?text=No+Image',
+                        discount: parseInt(p.discount) || 0
                     }));
                 
                 setRelatedProducts(related);
             }
         } catch (err) {
             console.error('Error fetching related products:', err);
+            // Don't show toast for related products error
         }
     };
 
@@ -116,27 +142,29 @@ const ProductDetails = () => {
     };
 
     const handleAddToCart = async () => {
+        if (!product.inStock) {
+            toast.error('This product is out of stock');
+            return;
+        }
+
         try {
             const token = localStorage.getItem('token');
             
             const cartItem = {
-                id: product.id,
-                name: product.name,
-                brand: product.brand,
-                price: product.price,
-                image: product.image,
+                product_id: product.id,
                 quantity: quantity,
-                selectedColor: selectedColor,
-                selectedStorage: selectedStorage
+                price: product.price,
+                name: product.name,
+                image: product.main_image,
+                selected_color: selectedColor,
+                selected_storage: selectedStorage
             };
 
             if (token) {
-                // If logged in, add to cart via API
-                await axios.post(`${API_URL}/cart/add`, cartItem, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                // Add to cart via API
+                await api.post('/cart/add', cartItem);
             } else {
-                // If not logged in, use localStorage
+                // Add to localStorage cart
                 const existingCart = JSON.parse(localStorage.getItem('cart')) || [];
                 
                 const existingItemIndex = existingCart.findIndex(item => 
@@ -148,13 +176,23 @@ const ProductDetails = () => {
                 if (existingItemIndex >= 0) {
                     existingCart[existingItemIndex].quantity += quantity;
                 } else {
-                    existingCart.push(cartItem);
+                    existingCart.push({
+                        id: product.id,
+                        name: product.name,
+                        brand: product.brand,
+                        price: product.price,
+                        image: product.image,
+                        main_image: product.main_image,
+                        quantity: quantity,
+                        selectedColor: selectedColor,
+                        selectedStorage: selectedStorage
+                    });
                 }
                 
                 localStorage.setItem('cart', JSON.stringify(existingCart));
             }
             
-            // Trigger cart update
+            // Trigger cart update events
             if (window.triggerCartUpdate) {
                 window.triggerCartUpdate();
             }
@@ -164,19 +202,23 @@ const ProductDetails = () => {
             
         } catch (error) {
             console.error('Error adding to cart:', error);
-            toast.error('Failed to add to cart');
+            toast.error(error.response?.data?.detail || 'Failed to add to cart');
         }
     };
 
     const handleBuyNow = () => {
         handleAddToCart();
-        navigate('/checkout');
+        setTimeout(() => {
+            navigate('/checkout');
+        }, 500);
     };
 
     const handleRelatedProductClick = (productId) => {
         navigate(`/product/${productId}`);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    // Loading state
     if (loading) {
         return (
             <div className="flex justify-center items-center h-96">
@@ -185,6 +227,7 @@ const ProductDetails = () => {
         );
     }
 
+    // Error state
     if (error || !product) {
         return (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
@@ -207,18 +250,18 @@ const ProductDetails = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             {/* Breadcrumb */}
             <nav className="flex mb-8 text-sm">
-                <button onClick={() => navigate('/')} className="text-gray-500 hover:text-blue-600">
+                <button onClick={() => navigate('/')} className="text-gray-500 hover:text-blue-600 transition duration-300">
                     Home
                 </button>
                 <span className="mx-2 text-gray-400">/</span>
                 <button 
-                    onClick={() => navigate(`/category/${product.category}`)} 
-                    className="text-gray-500 hover:text-blue-600"
+                    onClick={() => navigate(`/category/${product.category?.toLowerCase()}`)} 
+                    className="text-gray-500 hover:text-blue-600 transition duration-300"
                 >
                     {product.category?.charAt(0).toUpperCase() + product.category?.slice(1)}
                 </button>
                 <span className="mx-2 text-gray-400">/</span>
-                <span className="text-gray-900">{product.name}</span>
+                <span className="text-gray-900 font-medium truncate">{product.name}</span>
             </nav>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -278,28 +321,30 @@ const ProductDetails = () => {
                     </div>
 
                     {/* Rating */}
-                    <div className="flex items-center mb-4">
-                        <div className="flex text-yellow-400 text-lg">
-                            {[...Array(5)].map((_, i) => (
-                                <span key={i}>
-                                    {i < Math.floor(product.rating) ? '★' : '☆'}
-                                </span>
-                            ))}
+                    {product.rating > 0 && (
+                        <div className="flex items-center mb-4">
+                            <div className="flex text-yellow-400 text-lg">
+                                {[...Array(5)].map((_, i) => (
+                                    <span key={i}>
+                                        {i < Math.floor(product.rating) ? '★' : '☆'}
+                                    </span>
+                                ))}
+                            </div>
+                            <span className="text-gray-600 ml-2">
+                                ({product.reviews} {product.reviews === 1 ? 'review' : 'reviews'})
+                            </span>
                         </div>
-                        <span className="text-gray-600 ml-2">
-                            ({product.reviews} reviews)
-                        </span>
-                    </div>
+                    )}
 
                     {/* Price */}
                     <div className="mb-6">
                         {product.discount > 0 ? (
                             <div className="flex items-center flex-wrap gap-2">
                                 <span className="text-3xl font-bold text-gray-900">
-                                    ${product.price}
+                                    ${product.price.toFixed(2)}
                                 </span>
                                 <span className="text-lg text-gray-400 line-through ml-2">
-                                    ${product.originalPrice}
+                                    ${product.originalPrice.toFixed(2)}
                                 </span>
                                 <span className="bg-red-500 text-white px-2 py-1 rounded text-sm ml-2">
                                     Save {product.discount}%
@@ -307,7 +352,7 @@ const ProductDetails = () => {
                             </div>
                         ) : (
                             <span className="text-3xl font-bold text-gray-900">
-                                ${product.price}
+                                ${product.price.toFixed(2)}
                             </span>
                         )}
                     </div>
@@ -366,7 +411,7 @@ const ProductDetails = () => {
                         <div className="flex items-center space-x-3">
                             <button
                                 onClick={() => handleQuantityChange('decrement')}
-                                className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition duration-300"
+                                className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={!product.inStock}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -376,7 +421,7 @@ const ProductDetails = () => {
                             <span className="w-12 text-center font-semibold">{quantity}</span>
                             <button
                                 onClick={() => handleQuantityChange('increment')}
-                                className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition duration-300"
+                                className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={!product.inStock}
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -424,12 +469,14 @@ const ProductDetails = () => {
                     </div>
 
                     {/* Product Description */}
-                    <div className="border-t border-gray-200 pt-6 mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
-                        <p className="text-gray-600 leading-relaxed whitespace-pre-line">
-                            {product.description || 'No description available.'}
-                        </p>
-                    </div>
+                    {product.description && (
+                        <div className="border-t border-gray-200 pt-6 mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
+                            <p className="text-gray-600 leading-relaxed whitespace-pre-line">
+                                {product.description}
+                            </p>
+                        </div>
+                    )}
 
                     {/* Specifications */}
                     {product.specs && Object.keys(product.specs).length > 0 && (
@@ -442,7 +489,7 @@ const ProductDetails = () => {
                                             {key.replace(/([A-Z])/g, ' $1').trim()}:
                                         </span>
                                         <span className="text-sm text-gray-900 block font-medium">
-                                            {value || 'N/A'}
+                                            {value?.toString() || 'N/A'}
                                         </span>
                                     </div>
                                 ))}
@@ -461,13 +508,13 @@ const ProductDetails = () => {
                             <div 
                                 key={relatedProduct.id}
                                 onClick={() => handleRelatedProductClick(relatedProduct.id)}
-                                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300 cursor-pointer"
+                                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300 cursor-pointer group"
                             >
                                 <div className="relative h-48 overflow-hidden">
                                     <img 
                                         src={relatedProduct.image}
                                         alt={relatedProduct.name}
-                                        className="w-full h-full object-cover hover:scale-110 transition duration-300"
+                                        className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
                                         onError={(e) => {
                                             e.target.onerror = null;
                                             e.target.src = 'https://via.placeholder.com/200x200?text=No+Image';
@@ -492,10 +539,12 @@ const ProductDetails = () => {
                                         </div>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xl font-bold text-gray-900">${relatedProduct.price}</span>
+                                        <span className="text-xl font-bold text-gray-900">
+                                            ${relatedProduct.price.toFixed(2)}
+                                        </span>
                                         {relatedProduct.originalPrice > relatedProduct.price && (
                                             <span className="text-sm text-gray-400 line-through">
-                                                ${relatedProduct.originalPrice}
+                                                ${relatedProduct.originalPrice.toFixed(2)}
                                             </span>
                                         )}
                                     </div>

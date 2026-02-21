@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-const API_URL = process.env.REACT_APP_API_URL || 'https://backend4-phone-ecommerce.onrender.com';
+import toast from 'react-hot-toast';
+import api from '../utils/api';
 
 const Category = () => {
     const [categories, setCategories] = useState([]);
@@ -18,25 +17,34 @@ const Category = () => {
     const fetchCategories = async () => {
         try {
             setLoading(true);
+            setError(null);
             
             // Fetch all products to extract categories
-            const response = await axios.get(`${API_URL}/products/`);
+            const response = await api.get('/products/', {
+                params: { limit: 100 } // Get more products for category extraction
+            });
             
             if (response.data) {
                 console.log('Products fetched:', response.data);
                 
+                // Handle both array and paginated responses
+                const productsData = Array.isArray(response.data) 
+                    ? response.data 
+                    : response.data.items || response.data.products || [];
+                
                 // Extract unique categories from products
                 const categoryMap = new Map();
                 
-                response.data.forEach(product => {
+                productsData.forEach(product => {
                     const categoryName = product.category;
+                    if (!categoryName) return; // Skip products without category
+                    
                     if (!categoryMap.has(categoryName)) {
                         categoryMap.set(categoryName, {
                             id: categoryName.toLowerCase().replace(/\s+/g, '-'),
                             name: categoryName,
                             count: 1,
-                            // Use first product's image as category image
-                            image: product.main_image ? `${API_URL}/${product.main_image}` : null,
+                            image: product.main_image ? `${api.defaults.baseURL}${product.main_image}` : null,
                             products: [product]
                         });
                     } else {
@@ -47,10 +55,12 @@ const Category = () => {
                 });
 
                 // Convert map to array and add default images for categories without images
-                const categoriesArray = Array.from(categoryMap.values()).map(cat => ({
-                    ...cat,
-                    image: cat.image || `https://via.placeholder.com/400x300?text=${encodeURIComponent(cat.name)}`
-                }));
+                const categoriesArray = Array.from(categoryMap.values())
+                    .map(cat => ({
+                        ...cat,
+                        image: cat.image || `https://via.placeholder.com/400x300?text=${encodeURIComponent(cat.name)}`
+                    }))
+                    .filter(cat => cat.name && cat.name !== 'Uncategorized'); // Filter out invalid categories
 
                 // Sort categories by count (most products first)
                 categoriesArray.sort((a, b) => b.count - a.count);
@@ -66,18 +76,28 @@ const Category = () => {
             }
         } catch (err) {
             console.error('Error fetching categories:', err);
-            setError(err.response?.data?.detail || err.message || 'Failed to fetch categories');
+            
+            // Handle different error types
+            if (err.code === 'ERR_NETWORK') {
+                setError('Cannot connect to server. Please check if the backend is running.');
+            } else if (err.response) {
+                setError(err.response.data?.detail || err.response.data?.message || `Server error: ${err.response.status}`);
+            } else {
+                setError(err.message || 'Failed to fetch categories');
+            }
+            
+            toast.error('Failed to load categories');
         } finally {
             setLoading(false);
         }
     };
 
     const handleCategoryClick = (categoryName) => {
-        // Convert category name to slug format
-        const categorySlug = categoryName.toLowerCase().replace(/\s+/g, '-');
+        if (!categoryName) return;
         
         // Navigate to shop page with category filter
         navigate(`/shop?category=${encodeURIComponent(categoryName)}`);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleShopNowClick = (e, categoryName) => {
@@ -86,38 +106,39 @@ const Category = () => {
     };
 
     const getCategoryIcon = (categoryName) => {
-        const name = categoryName.toLowerCase();
-        if (name.includes('smartphone') || name.includes('phone')) {
+        const name = categoryName?.toLowerCase() || '';
+        
+        if (name.includes('smartphone') || name.includes('phone') || name.includes('mobile')) {
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600 group-hover:text-white transition duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
             );
-        } else if (name.includes('accessory') || name.includes('accessories')) {
+        } else if (name.includes('accessory') || name.includes('accessories') || name.includes('case') || name.includes('charger')) {
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600 group-hover:text-white transition duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                 </svg>
             );
-        } else if (name.includes('watch')) {
+        } else if (name.includes('watch') || name.includes('wearable')) {
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600 group-hover:text-white transition duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             );
-        } else if (name.includes('audio') || name.includes('headphone')) {
+        } else if (name.includes('audio') || name.includes('headphone') || name.includes('earphone') || name.includes('speaker')) {
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600 group-hover:text-white transition duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                 </svg>
             );
-        } else if (name.includes('tablet')) {
+        } else if (name.includes('tablet') || name.includes('ipad')) {
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600 group-hover:text-white transition duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
             );
-        } else if (name.includes('laptop') || name.includes('computer')) {
+        } else if (name.includes('laptop') || name.includes('computer') || name.includes('macbook')) {
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600 group-hover:text-white transition duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -133,6 +154,7 @@ const Category = () => {
         }
     };
 
+    // Loading state
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -141,13 +163,14 @@ const Category = () => {
         );
     }
 
+    // Error state
     if (error) {
         return (
             <div className="text-center py-12">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-red-600 text-lg mb-4">Error: {error}</p>
+                <p className="text-red-600 text-lg mb-4">{error}</p>
                 <button 
                     onClick={fetchCategories}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-300"
@@ -158,11 +181,31 @@ const Category = () => {
         );
     }
 
+    // No categories state
+    if (categories.length === 0) {
+        return (
+            <div className="text-center py-12">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-gray-500 text-lg mb-4">No categories found</p>
+                <button 
+                    onClick={() => navigate('/shop')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-300"
+                >
+                    Browse All Products
+                </button>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="text-center mb-12">
                 <h2 className="text-3xl font-bold text-gray-900 mb-4">Shop by Category</h2>
-                <p className="text-gray-600">Browse our wide range of phone categories</p>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                    Browse our wide range of phone categories and find the perfect device for your needs
+                </p>
             </div>
 
             {/* Main Category Cards */}
@@ -172,6 +215,13 @@ const Category = () => {
                         key={category.id} 
                         onClick={() => handleCategoryClick(category.name)}
                         className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition duration-300 cursor-pointer"
+                        role="button"
+                        tabIndex={0}
+                        onKeyPress={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                handleCategoryClick(category.name);
+                            }
+                        }}
                     >
                         {/* Category Image */}
                         <div className="relative h-64 overflow-hidden">
@@ -191,10 +241,11 @@ const Category = () => {
                         {/* Category Info */}
                         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                             <h3 className="text-xl font-bold mb-1">{category.name}</h3>
-                            <p className="text-sm text-gray-200 mb-3">{category.count} Products</p>
+                            <p className="text-sm text-gray-200 mb-3">{category.count} {category.count === 1 ? 'Product' : 'Products'}</p>
                             <button 
                                 onClick={(e) => handleShopNowClick(e, category.name)}
                                 className="bg-white text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 hover:bg-blue-600 hover:text-white"
+                                aria-label={`Shop ${category.name} category`}
                             >
                                 Shop Now
                             </button>
@@ -204,7 +255,7 @@ const Category = () => {
             </div>
 
             {/* All Categories - Grid View */}
-            {categories.length > 0 && (
+            {categories.length > 6 && (
                 <div className="mt-16">
                     <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">All Categories</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -213,13 +264,23 @@ const Category = () => {
                                 key={`card-${category.id}`}
                                 onClick={() => handleCategoryClick(category.name)}
                                 className="bg-white rounded-lg shadow p-6 text-center hover:shadow-lg transition duration-300 cursor-pointer group"
+                                role="button"
+                                tabIndex={0}
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        handleCategoryClick(category.name);
+                                    }
+                                }}
                             >
                                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-600 transition duration-300">
                                     {getCategoryIcon(category.name)}
                                 </div>
-                                <h4 className="font-semibold text-gray-900 mb-1">{category.name}</h4>
-                                <p className="text-sm text-gray-500">{category.count} Items</p>
-                                <button className="mt-3 text-blue-600 group-hover:text-blue-800 text-sm font-semibold opacity-0 group-hover:opacity-100 transition duration-300">
+                                <h4 className="font-semibold text-gray-900 mb-1 line-clamp-1">{category.name}</h4>
+                                <p className="text-sm text-gray-500">{category.count} {category.count === 1 ? 'Item' : 'Items'}</p>
+                                <button 
+                                    className="mt-3 text-blue-600 group-hover:text-white text-sm font-semibold opacity-0 group-hover:opacity-100 transition duration-300"
+                                    aria-label={`Shop ${category.name}`}
+                                >
                                     Shop Now →
                                 </button>
                             </div>
@@ -236,7 +297,10 @@ const Category = () => {
                             <h3 className="text-3xl font-bold mb-4">Can't find what you're looking for?</h3>
                             <p className="text-blue-100 mb-6">Browse all our categories and discover amazing products at great prices.</p>
                             <button 
-                                onClick={() => navigate('/shop')}
+                                onClick={() => {
+                                    navigate('/shop');
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
                                 className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition duration-300"
                             >
                                 View All Products
@@ -248,9 +312,16 @@ const Category = () => {
                                     key={`banner-${category.id}`}
                                     onClick={() => handleCategoryClick(category.name)}
                                     className="bg-white bg-opacity-20 rounded-lg p-4 text-center cursor-pointer hover:bg-opacity-30 transition duration-300"
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            handleCategoryClick(category.name);
+                                        }
+                                    }}
                                 >
-                                    <p className="font-semibold">{category.name}</p>
-                                    <p className="text-sm text-blue-100">{category.count} products</p>
+                                    <p className="font-semibold line-clamp-1">{category.name}</p>
+                                    <p className="text-sm text-blue-100">{category.count} {category.count === 1 ? 'product' : 'products'}</p>
                                 </div>
                             ))}
                         </div>

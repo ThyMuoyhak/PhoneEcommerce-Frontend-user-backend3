@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import toast from 'react-hot-toast';
-
-const API_URL = process.env.REACT_APP_API_URL || 'https://backend4-phone-ecommerce.onrender.com';
+import api from '../utils/api';
 
 const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
     const [products, setProducts] = useState([]);
@@ -18,124 +16,172 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
     const [productsPerPage] = useState(8);
     const [brands, setBrands] = useState(['all']);
     const [categories, setCategories] = useState([]);
+    const [totalProducts, setTotalProducts] = useState(0);
     
     const navigate = useNavigate();
 
+    // Update search term when prop changes
     useEffect(() => {
         setSearchTerm(propSearchQuery);
     }, [propSearchQuery]);
 
+    // Fetch products on component mount
     useEffect(() => {
         fetchProducts();
     }, []);
 
+    // Apply filters and sorting when dependencies change
     useEffect(() => {
         filterAndSortProducts();
     }, [products, selectedBrand, sortBy, searchTerm, filter]);
 
+    // Update displayed products based on pagination
     useEffect(() => {
-        // Update displayed products based on pagination
         const indexOfLastProduct = currentPage * productsPerPage;
         const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
         setDisplayedProducts(filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct));
     }, [filteredProducts, currentPage, productsPerPage]);
 
+    // Fetch products from API
     const fetchProducts = async () => {
         try {
             setLoading(true);
+            setError(null);
             
-            // Build query parameters based on filter
-            let params = {};
+            // Build query parameters
+            const params = {};
             
             if (filter !== 'all') {
-                if (filter === 'deals') {
-                    // For deals, we'll filter on the frontend
-                } else if (filter === 'new') {
-                    // For new products
-                } else if (filter === 'featured') {
-                    params.featured = true;
-                } else {
-                    // For category filter
-                    params.category = filter;
+                switch(filter) {
+                    case 'featured':
+                        params.featured = true;
+                        break;
+                    case 'deals':
+                        params.discount = true;
+                        break;
+                    case 'new':
+                        params.sort = '-created_at';
+                        break;
+                    default:
+                        params.category = filter;
                 }
             }
             
-            // Fetch products from API
-            const response = await axios.get(`${API_URL}/products/`, { params });
+            // Add pagination params if needed
+            params.limit = 50; // Get more products for filtering on frontend
+            
+            const response = await api.get('/products/', { params });
             
             if (response.data) {
                 console.log('Fetched products:', response.data);
                 
-                // Transform API data to match frontend format
-                const transformedProducts = response.data.map(product => ({
+                // Handle both array and paginated responses
+                const productsData = Array.isArray(response.data) 
+                    ? response.data 
+                    : response.data.items || response.data.products || [];
+                
+                setTotalProducts(productsData.length);
+                
+                // Transform API data to frontend format
+                const transformedProducts = productsData.map(product => ({
                     id: product.id,
                     name: product.name,
-                    brand: product.brand,
-                    category: product.category,
-                    price: product.price,
-                    originalPrice: product.original_price || product.price,
-                    rating: product.rating || 0,
-                    reviews: product.reviews || 0,
-                    inStock: product.in_stock,
+                    brand: product.brand || 'Unknown Brand',
+                    category: product.category || 'Uncategorized',
+                    price: parseFloat(product.price) || 0,
+                    originalPrice: parseFloat(product.original_price) || parseFloat(product.price) || 0,
+                    rating: parseFloat(product.rating) || 0,
+                    reviews: product.reviews_count || product.reviews || 0,
+                    inStock: product.in_stock !== undefined ? product.in_stock : true,
                     featured: product.featured || false,
-                    discount: product.discount || 0,
+                    discount: parseInt(product.discount) || 0,
                     colors: product.colors || [],
                     storage: product.storage || [],
                     description: product.description || '',
                     specs: product.specs || {},
-                    image: product.main_image ? `${API_URL}/${product.main_image}` : 'https://via.placeholder.com/300x200?text=No+Image',
-                    images: product.images ? product.images.map(img => `${API_URL}/${img}`) : []
+                    main_image: product.main_image,
+                    image: product.main_image 
+                        ? `${api.defaults.baseURL}${product.main_image}` 
+                        : 'https://via.placeholder.com/300x200?text=No+Image',
+                    images: product.images 
+                        ? product.images.map(img => `${api.defaults.baseURL}${img}`)
+                        : []
                 }));
                 
                 setProducts(transformedProducts);
                 
-                // Extract unique brands
-                const uniqueBrands = ['all', ...new Set(transformedProducts.map(p => p.brand).filter(Boolean))];
+                // Extract unique brands (filter out null/undefined)
+                const uniqueBrands = ['all', ...new Set(
+                    transformedProducts
+                        .map(p => p.brand)
+                        .filter(brand => brand && brand !== 'Unknown Brand')
+                )];
                 setBrands(uniqueBrands);
                 
                 // Extract unique categories
-                const uniqueCategories = [...new Set(transformedProducts.map(p => p.category).filter(Boolean))];
+                const uniqueCategories = [...new Set(
+                    transformedProducts
+                        .map(p => p.category)
+                        .filter(cat => cat && cat !== 'Uncategorized')
+                )];
                 setCategories(uniqueCategories);
             }
         } catch (err) {
             console.error('Error fetching products:', err);
-            setError(err.response?.data?.detail || err.message || 'Failed to fetch products');
+            
+            // Handle different error types
+            if (err.code === 'ERR_NETWORK') {
+                setError('Cannot connect to server. Please check if the backend is running.');
+            } else if (err.response) {
+                // Server responded with error
+                setError(err.response.data?.detail || err.response.data?.message || `Server error: ${err.response.status}`);
+            } else if (err.request) {
+                // Request made but no response
+                setError('No response from server. Please try again later.');
+            } else {
+                setError(err.message || 'Failed to fetch products');
+            }
+            
             toast.error('Failed to load products. Please try again later.');
         } finally {
             setLoading(false);
         }
     };
 
+    // Filter and sort products
     const filterAndSortProducts = () => {
+        if (!products.length) return;
+        
         let filtered = [...products];
 
         // Apply category filter from props
         if (filter !== 'all') {
             switch(filter) {
                 case 'smartphones':
-                    filtered = filtered.filter(product => product.category?.toLowerCase() === 'smartphones');
+                    filtered = filtered.filter(product => 
+                        product.category?.toLowerCase().includes('phone') || 
+                        product.category?.toLowerCase() === 'smartphones'
+                    );
                     break;
                 case 'accessories':
-                    filtered = filtered.filter(product => product.category?.toLowerCase() === 'accessories');
+                    filtered = filtered.filter(product => 
+                        product.category?.toLowerCase().includes('accessory')
+                    );
                     break;
                 case 'deals':
                     filtered = filtered.filter(product => product.discount > 0);
                     break;
                 case 'new':
-                    // Sort by ID descending and take newest
-                    filtered = [...filtered].sort((a, b) => b.id - a.id);
+                    // Already sorted by newest from API
                     break;
                 case 'featured':
                     filtered = filtered.filter(product => product.featured === true);
                     break;
                 default:
                     // If filter is a specific category
-                    if (categories.includes(filter)) {
-                        filtered = filtered.filter(product => 
-                            product.category?.toLowerCase() === filter.toLowerCase()
-                        );
-                    }
-                    break;
+                    filtered = filtered.filter(product => 
+                        product.category?.toLowerCase() === filter.toLowerCase()
+                    );
             }
         }
 
@@ -147,8 +193,8 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
         }
 
         // Filter by search term
-        if (searchTerm) {
-            const term = searchTerm.toLowerCase();
+        if (searchTerm && searchTerm.trim()) {
+            const term = searchTerm.toLowerCase().trim();
             filtered = filtered.filter(product =>
                 product.name?.toLowerCase().includes(term) ||
                 product.brand?.toLowerCase().includes(term) ||
@@ -189,29 +235,37 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
         setCurrentPage(1); // Reset to first page when filters change
     };
 
+    // Handle product click
     const handleProductClick = (productId) => {
         navigate(`/product/${productId}`);
     };
 
+    // Handle add to cart
     const handleAddToCart = async (e, product) => {
         e.stopPropagation(); // Prevent triggering the product click
         
+        if (!product.inStock) {
+            toast.error('This product is out of stock');
+            return;
+        }
+        
         try {
-            // Check if user is logged in
             const token = localStorage.getItem('token');
             
+            const cartItem = {
+                product_id: product.id,
+                quantity: 1,
+                price: product.price,
+                name: product.name,
+                image: product.main_image
+            };
+            
             if (token) {
-                // If logged in, add to cart via API
-                await axios.post(`${API_URL}/cart/add`, {
-                    product_id: product.id,
-                    quantity: 1
-                }, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                // Add to cart via API
+                await api.post('/cart/add', cartItem);
             } else {
-                // If not logged in, use localStorage
+                // Add to localStorage cart
                 const existingCart = JSON.parse(localStorage.getItem('cart')) || [];
-                
                 const existingItemIndex = existingCart.findIndex(item => item.id === product.id);
                 
                 if (existingItemIndex >= 0) {
@@ -223,6 +277,7 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
                         brand: product.brand,
                         price: product.price,
                         image: product.image,
+                        main_image: product.main_image,
                         quantity: 1,
                         selectedColor: product.colors?.length > 0 ? product.colors[0] : null,
                         selectedStorage: product.storage?.length > 0 ? product.storage[0] : null
@@ -232,27 +287,28 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
                 localStorage.setItem('cart', JSON.stringify(existingCart));
             }
             
-            // Trigger cart update
+            // Trigger cart update events
             if (window.triggerCartUpdate) {
                 window.triggerCartUpdate();
             }
             window.dispatchEvent(new Event('cartUpdated'));
             
-            // Show success message
             toast.success(`${product.name} added to cart!`);
             
         } catch (error) {
             console.error('Error adding to cart:', error);
-            toast.error('Failed to add to cart');
+            toast.error(error.response?.data?.detail || 'Failed to add to cart');
         }
     };
 
+    // Clear all filters
     const clearAllFilters = () => {
         setSelectedBrand('all');
         setSearchTerm('');
         setSortBy('default');
     };
 
+    // Pagination
     const paginate = (pageNumber) => {
         setCurrentPage(pageNumber);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -261,6 +317,7 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
     // Calculate total pages
     const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
 
+    // Render loading state
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -269,13 +326,14 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
         );
     }
 
+    // Render error state
     if (error) {
         return (
             <div className="text-center py-12">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p className="text-red-600 text-lg mb-4">Error: {error}</p>
+                <p className="text-red-600 text-lg mb-4">{error}</p>
                 <button 
                     onClick={fetchProducts}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-300"
@@ -288,7 +346,13 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">Our Products</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">
+                {filter === 'all' ? 'All Products' : 
+                 filter === 'deals' ? 'Special Deals' :
+                 filter === 'new' ? 'New Arrivals' :
+                 filter === 'featured' ? 'Featured Products' :
+                 `${filter.charAt(0).toUpperCase() + filter.slice(1)}`}
+            </h2>
             
             {/* Filters and Search */}
             <div className="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -309,19 +373,21 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
                 </div>
 
                 {/* Brand Filter */}
-                <div>
-                    <select
-                        value={selectedBrand}
-                        onChange={(e) => setSelectedBrand(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        {brands.map(brand => (
-                            <option key={brand} value={brand}>
-                                {brand === 'all' ? 'All Brands' : brand}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                {brands.length > 1 && (
+                    <div>
+                        <select
+                            value={selectedBrand}
+                            onChange={(e) => setSelectedBrand(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            {brands.map(brand => (
+                                <option key={brand} value={brand}>
+                                    {brand === 'all' ? 'All Brands' : brand}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
 
                 {/* Sort By */}
                 <div>
@@ -330,7 +396,7 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
                         onChange={(e) => setSortBy(e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                        <option value="default">Default</option>
+                        <option value="default">Sort By: Default</option>
                         <option value="newest">Newest First</option>
                         <option value="price-low">Price: Low to High</option>
                         <option value="price-high">Price: High to Low</option>
@@ -381,9 +447,11 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
             )}
 
             {/* Results count */}
-            <p className="text-gray-600 mb-4">
-                Showing {displayedProducts.length} of {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
-            </p>
+            {filteredProducts.length > 0 && (
+                <p className="text-gray-600 mb-4">
+                    Showing {displayedProducts.length} of {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
+                </p>
+            )}
 
             {/* Products Grid */}
             {filteredProducts.length === 0 ? (
@@ -391,7 +459,7 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <p className="text-gray-500 text-lg mb-4">No products found</p>
+                    <p className="text-gray-500 text-lg mb-4">No products found matching your criteria</p>
                     <button 
                         onClick={clearAllFilters}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-300"
@@ -454,10 +522,10 @@ const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
                                     
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <span className="text-xl font-bold text-gray-900">${product.price}</span>
+                                            <span className="text-xl font-bold text-gray-900">${product.price.toFixed(2)}</span>
                                             {product.originalPrice > product.price && (
                                                 <span className="text-sm text-gray-400 line-through ml-2">
-                                                    ${product.originalPrice}
+                                                    ${product.originalPrice.toFixed(2)}
                                                 </span>
                                             )}
                                         </div>
