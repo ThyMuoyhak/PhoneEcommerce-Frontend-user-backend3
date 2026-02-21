@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = 'https://backend4-phone-ecommerce.onrender.com';
 
 const Deals = () => {
     const [deals, setDeals] = useState([]);
