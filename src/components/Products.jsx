@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_URL = process.env.REACT_APP_API_URL || 'https://backend4-phone-ecommerce.onrender.com';
 
 const Products = ({ filter = 'all', searchQuery: propSearchQuery = '' }) => {
     const [products, setProducts] = useState([]);
