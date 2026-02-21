@@ -8,52 +8,29 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 second timeout
+  timeout: 10000,
 });
 
-// Request interceptor to add token
+// Request interceptor
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
-    // Log requests in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🚀 [API] ${config.method?.toUpperCase()} ${config.url}`, config.params || '');
-    }
-    
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor for error handling
+// Response interceptor
 api.interceptors.response.use(
-  (response) => {
-    // Log responses in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`✅ [API] ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
-    }
-    return response;
-  },
+  (response) => response,
   (error) => {
-    // Log errors in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('❌ [API] Error:', error.response?.data || error.message);
-    }
-    
-    // Handle token expiration
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // Optional: redirect to login
-      // window.location.href = '/login';
     }
-    
     return Promise.reject(error);
   }
 );
